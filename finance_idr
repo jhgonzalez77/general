@@ -75,6 +75,7 @@ CREATE VIEW [dbo].[view_idr_contract] AS
 	,FY.date_end AS end_date--28
 	,(SELECT SUM(r1.GrossAmount) FROM reimbursements r1 WHERE r1.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r1.PGM_ID AND r1.BUDG_HDR_ID = bh.Budget_Hdr_Id) AS ytd_expenditures--32
 	,(SELECT MAX(r2.period_end) FROM reimbursements r2 WHERE r2.ApprovalDate IS NOT NULL AND r2.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r2.PGM_ID AND r2.BUDG_HDR_ID = bh.Budget_Hdr_Id)  AS last_approved_invoice--33
+	,(SELECT SUM(fyt2.JWBAllocation) + SUM(fyt2.TotalAmendments) FROM FiscalYearTotals fyt2 WHERE fyt2.BudgetHdrId=bh.budget_hdr_id) - (SELECT SUM(r1.GrossAmount) FROM reimbursements r1 WHERE r1.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r1.PGM_ID AND r1.BUDG_HDR_ID = bh.Budget_Hdr_Id) AS remaining_balance
 	,(SELECT SUM(mad2.pmtamt) FROM miscadjdtl mad2 INNER JOIN MiscAdjHdr mah2 ON mad2.MiscAdjHdrID=mah2.MiscAdjHdrID WHERE mah2.ProgramID = p.Program_id AND mah2.ProgramID = bh.Program_id) AS advances--34
 	,LEFT(FY.FY_Year,5) AS tct_fy--36
 	,l.date_modified--37
