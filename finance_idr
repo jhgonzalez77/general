@@ -41,10 +41,8 @@
 31Close-out Date					Not in Trust Central.  Consider to add a field in Contracting to track Service Authorization Letters? 
 
 */
-CREATE VIEW [dbo].[view_idr_contract] AS
-
-	SELECT 
-	cc.id,
+SELECT 
+	DISTINCT (bh.Budget_HDR_id),
 	cc.title,
 	2531 site_id,
 	co.legal_name AS legal_name--1
@@ -75,7 +73,7 @@ CREATE VIEW [dbo].[view_idr_contract] AS
 	,FY.date_end AS end_date--28
 	,(SELECT SUM(r1.GrossAmount) FROM reimbursements r1 WHERE r1.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r1.PGM_ID AND r1.BUDG_HDR_ID = bh.Budget_Hdr_Id) AS ytd_expenditures--32
 	,(SELECT MAX(r2.period_end) FROM reimbursements r2 WHERE r2.ApprovalDate IS NOT NULL AND r2.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r2.PGM_ID AND r2.BUDG_HDR_ID = bh.Budget_Hdr_Id)  AS last_approved_invoice--33
-	,(SELECT MAX(r2.ApprovalDate) FROM reimbursements r2 WHERE r2.ApprovalDate IS NOT NULL AND r2.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r2.PGM_ID AND r2.BUDG_HDR_ID = bh.Budget_Hdr_Id)  AS last_invoice_approval_date
+    ,(SELECT MAX(r2.ApprovalDate) FROM reimbursements r2 WHERE r2.ApprovalDate IS NOT NULL AND r2.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r2.PGM_ID AND r2.BUDG_HDR_ID = bh.Budget_Hdr_Id)  AS last_invoice_approval_date
 	,(SELECT SUM(fyt2.JWBAllocation) + SUM(fyt2.TotalAmendments) FROM FiscalYearTotals fyt2 WHERE fyt2.BudgetHdrId=bh.budget_hdr_id) - (SELECT SUM(r1.GrossAmount) FROM reimbursements r1 WHERE r1.PGM_ID = P.Program_id AND ja.PROGRAM_ID = r1.PGM_ID AND r1.BUDG_HDR_ID = bh.Budget_Hdr_Id) AS remaining_balance
 	,(SELECT SUM(mad2.pmtamt) FROM miscadjdtl mad2 INNER JOIN MiscAdjHdr mah2 ON mad2.MiscAdjHdrID=mah2.MiscAdjHdrID WHERE mah2.ProgramID = p.Program_id AND mah2.ProgramID = bh.Program_id) AS advances--34
 	,LEFT(FY.FY_Year,5) AS tct_fy--36
@@ -90,16 +88,43 @@ CREATE VIEW [dbo].[view_idr_contract] AS
 	,NULL AS close_out_date--31
 	,NULL AS advance_remaining_balance--35
 
+FROM BUDG_HDR bh
+    LEFT OUTER JOIN crm_contract cc ON cc.program_id = bh.Program_id
+		INNER JOIN crm_organization co ON cc.crm_organization_id=co.id 
+		INNER JOIN JWB_ALLOCATIONS ja ON ja.ALLOC_ID = cc.jwb_allocations_id
+		INNER JOIN Program p ON p.Program_id = ja.PROGRAM_ID 
+		LEFT OUTER JOIN crm_contract_general cg ON cg.crm_contract_id=cc.id 
+		LEFT OUTER JOIN FY ON FY.FY_id = ja.FY_ID 
+		--LEFT OUTER JOIN BUDG_HDR bh ON p.Program_id=bh.Program_id AND ja.FY_ID=bh.FY_id 
+        --LEFT OUTER JOIN crm_contract cc ON cc.program_id = b.Program_id
+		LEFT OUTER JOIN ProgramAllocation pa ON ja.ALLOC_ID = pa.AllocationID 
+		LEFT OUTER JOIN crm_initiative i ON i.id = p.crm_initiative_id
+		LEFT OUTER JOIN MiscAdjHdr mah ON mah.ProgramID = p.Program_id AND mah.ProgramID = bh.Program_id
+		LEFT OUTER JOIN MiscAdjDtl mad ON mad.MiscAdjHdrID=mah.MiscAdjHdrID
+		
+		OUTER APPLY (
+			SELECT TOP 1 l.date_recorded date_modified
+			FROM xm_log l
+			WHERE l.table_name = 'crm_contract'
+			and l.record_id = cc.id
+			AND l.activity IN ('C','U')
+			ORDER BY l.id DESC
+		) l
+
+
+	WHERE bh.LAST_STATUS_ID = 2
+
+    ORDER BY Budget_Hdr_id Desc;
 	
-
-
-	FROM crm_contract cc 
+/*
+	FROM BUDG_HDR b
 		INNER JOIN crm_organization co ON cc.crm_organization_id=co.id 
 		INNER JOIN JWB_ALLOCATIONS ja ON ja.ALLOC_ID = cc.jwb_allocations_id
 		INNER JOIN Program p ON p.Program_id = ja.PROGRAM_ID 
 		LEFT OUTER JOIN crm_contract_general cg ON cg.crm_contract_id=cc.id 
 		LEFT OUTER JOIN FY ON FY.FY_id = ja.FY_ID 
 		LEFT OUTER JOIN BUDG_HDR bh ON p.Program_id=bh.Program_id AND ja.FY_ID=bh.FY_id 
+        LEFT OUTER JOIN crm_contract cc ON cc.program_id = b.Program_id
 		--LEFT OUTER JOIN ProgramAllocation pa ON ja.ALLOC_ID = pa.AllocationID 
 		LEFT OUTER JOIN crm_initiative i ON i.id = p.crm_initiative_id
 		--LEFT OUTER JOIN MiscAdjHdr mah ON mah.ProgramID = p.Program_id AND mah.ProgramID = bh.Program_id
@@ -115,4 +140,7 @@ CREATE VIEW [dbo].[view_idr_contract] AS
 		) l
 
 
-	WHERE cc.current_contract = 1
+	WHERE b.LAST_STATUS_ID = 2
+
+    ORDER BY Budget_Hdr_id Desc;
+    */
