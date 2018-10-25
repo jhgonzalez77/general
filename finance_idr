@@ -140,7 +140,7 @@ FROM BUDG_HDR bh
 		) l
 
 
-	WHERE b.LAST_STATUS_ID = 2
+	WHERE b.LAST_STATUS_ID = 2 AND cc.current_contract = 1
 
     ORDER BY Budget_Hdr_id Desc;
     */
