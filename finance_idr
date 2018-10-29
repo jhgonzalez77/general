@@ -89,14 +89,12 @@ SELECT
 	,NULL AS advance_remaining_balance--35
 
 FROM BUDG_HDR bh
-    LEFT OUTER JOIN crm_contract cc ON cc.program_id = bh.Program_id
+		INNER JOIN JWB_ALLOCATIONS ja ON ja.PROGRAM_ID = bh.Program_id AND ja.FY_ID = bh.FY_id
+		LEFT OUTER JOIN crm_contract cc ON cc.jwb_allocations_id = ja.ALLOC_ID
 		INNER JOIN crm_organization co ON cc.crm_organization_id=co.id 
-		INNER JOIN JWB_ALLOCATIONS ja ON ja.ALLOC_ID = cc.jwb_allocations_id
 		INNER JOIN Program p ON p.Program_id = ja.PROGRAM_ID 
 		LEFT OUTER JOIN crm_contract_general cg ON cg.crm_contract_id=cc.id 
 		LEFT OUTER JOIN FY ON FY.FY_id = ja.FY_ID 
-		--LEFT OUTER JOIN BUDG_HDR bh ON p.Program_id=bh.Program_id AND ja.FY_ID=bh.FY_id 
-        --LEFT OUTER JOIN crm_contract cc ON cc.program_id = b.Program_id
 		LEFT OUTER JOIN ProgramAllocation pa ON ja.ALLOC_ID = pa.AllocationID 
 		LEFT OUTER JOIN crm_initiative i ON i.id = p.crm_initiative_id
 		LEFT OUTER JOIN MiscAdjHdr mah ON mah.ProgramID = p.Program_id AND mah.ProgramID = bh.Program_id
@@ -111,36 +109,6 @@ FROM BUDG_HDR bh
 			ORDER BY l.id DESC
 		) l
 
-
 	WHERE bh.LAST_STATUS_ID = 2
 
     ORDER BY Budget_Hdr_id Desc;
-	
-/*
-	FROM BUDG_HDR b
-		INNER JOIN crm_organization co ON cc.crm_organization_id=co.id 
-		INNER JOIN JWB_ALLOCATIONS ja ON ja.ALLOC_ID = cc.jwb_allocations_id
-		INNER JOIN Program p ON p.Program_id = ja.PROGRAM_ID 
-		LEFT OUTER JOIN crm_contract_general cg ON cg.crm_contract_id=cc.id 
-		LEFT OUTER JOIN FY ON FY.FY_id = ja.FY_ID 
-		LEFT OUTER JOIN BUDG_HDR bh ON p.Program_id=bh.Program_id AND ja.FY_ID=bh.FY_id 
-        LEFT OUTER JOIN crm_contract cc ON cc.program_id = b.Program_id
-		--LEFT OUTER JOIN ProgramAllocation pa ON ja.ALLOC_ID = pa.AllocationID 
-		LEFT OUTER JOIN crm_initiative i ON i.id = p.crm_initiative_id
-		--LEFT OUTER JOIN MiscAdjHdr mah ON mah.ProgramID = p.Program_id AND mah.ProgramID = bh.Program_id
-		--LEFT OUTER JOIN MiscAdjDtl mad ON mad.MiscAdjHdrID=mah.MiscAdjHdrID
-		
-		OUTER APPLY (
-			SELECT TOP 1 l.date_recorded date_modified
-			FROM xm_log l
-			WHERE l.table_name = 'crm_contract'
-			and l.record_id = cc.id
-			AND l.activity IN ('C','U')
-			ORDER BY l.id DESC
-		) l
-
-
-	WHERE b.LAST_STATUS_ID = 2 AND cc.current_contract = 1
-
-    ORDER BY Budget_Hdr_id Desc;
-    */
