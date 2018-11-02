@@ -1,46 +1,3 @@
-/*
------------COMPLETE ITEMS BELOW-------------------------------------------------------------------------------------------------------
-1Provider Name						Legal NameCRM
-2Contract Number					Contract Number SAMIS - Program Allocation
-3SAMIS Program Name					Program Name SAMIS Program Maintenance
-4Program Name						Program Name Contracts
-5Initiative							Initiative SAMIS Program Maintenance/Classifications
-7TCT Strategic Funding Areas		Calculated field use the Initiative Description in the Initiative tab for mapping.
-8Investment Areas					Calculated field use the Initiative Description in the Initiative tab for mapping.
-9Initiatives						Calculated field use the Initiative Description in the Initiative tab for mapping.
-10Gp Vendor Id						VendorID	 SAMIS - Program Maintenance
-11Contract Manager					SAMIS - Program Maintenance
-12Contract Administrator			SAMIS - Program Maintenance
-13Accountant						SAMIS - Program Maintenance
-14R&E Analyst						SAMIS - Program Maintenance
-15Senior Program Manager			DUPE - SAMIS - Program Maintenance --lg I think this is the same as the "Contract Manager" in #11
-16Original Contract Amount			Original Contract Amount SAMIS - Budgets or Original Award Program Allocation
-17Current Contract Amount			Budget Contract Amount SAMIS - Revised Amended CSC Budget
-18Maximum Award Amount				Allocation SAMIS - Program Allocation sum of the allocations (JWB_allocations.JWBallocation)
-19Execution Date					Exectution Date Contract Module
-20Contract has been Amended			Calculated field to be added - Yes = where Type (Contracts Module) = "Amendment" and [Amendment Type] not equal to "Revision" 
-21Contract Amended Total Amount		Calculated field to be added = from SAMIS [Revised Amended CSC Budget] - [Original CSC Budget] or Current contract amount - original contract amount
-23Subcontractors Budget Amount		total funding request amount (crm_contract_budget_expenses_subcontractors), if = 0, then total funding request amount (budg_exp_items JWB_fund_amount)
-24Award Date						Resolution Date SAMIS - Program Allocation
-25Execution Date					DUPE - Exectution Date Contract Module - WA: this is a dup of line 19
-27Begin Date						FY_Start_Date SAMIS - FY Maintenance Screen / Contract 
-28End Date							FY_End_Date SAMIS - FY Maintenance Screen / Contract 
-32YTD Expenditures					SAMIS - reimbursements table, Sum(GrossAmount) by FYID (https://www.trustcentral.org/modules/samis/fiscal/fiscal_requests.cfm?actionxm=Modify&WFArea=Reimbursement&id=59831 YTD Request column on that page)
-33Last Approved Invoice				SAMIS - Billing Period End Date of Last Approved Invoice reimbursements table, ApprovedDate is not null max(period_end)
-34Advances							From SAMIS - Adjustments  Sum of “Total Applied” on Manual Payment where Funds Type=”Provided”, by ProgramID and Fiscal Year
-36TCT FY							SAMIS - Fiscal Year Maintenance.  TCT FY = First 5 characters of Year DESCRIPTION
------------DEFINED - IN PROCESS ITEMS BELOW-------------------------------------------------------------------------------------------------------
-22Subcontractors					Contracts - YES = Count Subcontractors with Budget $> 0,where GL ID 20 and total funding request amount >0 (budg_exp_items JWB_fund_amount) = Y
-35Advance Remaining Balance			From SAMIS - Amount owed  advances – Sum of Net Adjustment Payments (see screenshot below)  https://www.trustcentral.org/vault/ReportFiles/9dcb3d7c-2d39-4.pdf  FYI amount for YTDAmtOwed stored in the reimbursement table seems to be incorrect.
-
------------UNDEFINED ITEMS BELOW - no idea what to populate these with----------------------------------------------
-6Service Timeframe					Service Timeframe Calculated field depending on selection on Service Timeframe field on Contracts. Show value. If School Year and Summer are selected, then shows "School Year and Summer"
-26Termination Date					Not in Trust Central
-29Revised End Date					Change in End Date- Amendment Table.  Is the original End Date stored somewhere in the Trust Central?
-30Service Authorization Date		Not in Trust Central.  Consider to add a field in Contracting to track Service Authorization Letters? 
-31Close-out Date					Not in Trust Central.  Consider to add a field in Contracting to track Service Authorization Letters? 
-
-*/
 SELECT
 DISTINCT bh.Budget_HDR_id,
 --cc.title,
@@ -64,7 +21,8 @@ co.legal_name AS legal_name--1
 ,(SELECT SUM(fyt2.JWBAllocation) + SUM(fyt2.TotalAmendments) FROM FiscalYearTotals fyt2 WHERE fyt2.BudgetHdrId=bh.budget_hdr_id) AS current_contract_amount--17
 ,(SELECT SUM(ja2.JWB_ALLOCATION) FROM JWB_ALLOCATIONS ja2 WHERE ja2.FY_ID=ja.FY_ID AND ja2.PROGRAM_ID=ja.PROGRAM_ID) AS max_award_amount--18
 ,cc.date_executed AS execution_date--19
-,CASE WHEN (select count(id) FROM crm_contract WHERE type = 'Amendment' AND crm_contract_id_parent = cc.id) > 0 THEN 1 ELSE 0 END AS contract_has_been_amended--20
+,cc.amendments AS amendments
+--,CASE WHEN (select count(id) FROM crm_contract WHERE type = 'Amendment' AND crm_contract_id_parent = cc.id) > 0 THEN 1 ELSE 0 END AS contract_has_been_amended--20
 --,CASE WHEN subbudg.total_funding_request_amount IS null THEN (SELECT bi2.JWB_fund_amount FROM budg_exp_items bi2 WHERE bi2.BUDGET_HDR_ID = bh.Budget_Hdr_Id) ELSE subbudg.total_funding_request_amount end AS subcontractors_budget_amt--23
 ,ja.ResolutionDate AS award_date--24
 ,FY.date_start AS begin_date--27
@@ -91,7 +49,8 @@ FROM BUDG_HDR bh
 	LEFT OUTER JOIN (SELECT jwb_allocations_id, MAX(id) id, MAX(date_executed) date_executed, MAX (crm_organization_id) crm_organization_id, (COUNT(date_executed)-1) amendments
 		FROM crm_contract
 		GROUP BY jwb_allocations_id) cc ON cc.jwb_allocations_id = ja.ALLOC_ID
-	LEFT OUTER JOIN crm_organization co ON cc.crm_organization_id=co.id
+	--LEFT OUTER JOIN crm_organization co ON cc.crm_organization_id=co.id
+	LEFT OUTER JOIN crm_organization co ON bh.Agency_id=co.id
 	LEFT OUTER JOIN Program p ON p.Program_id = ja.PROGRAM_ID
 	LEFT OUTER JOIN crm_contract_general cg ON cg.crm_contract_id=cc.id
 	LEFT OUTER JOIN FY ON FY.FY_id = ja.FY_ID
@@ -109,4 +68,4 @@ FROM BUDG_HDR bh
 	) l
 
 WHERE bh.LAST_STATUS_ID = 2
-ORDER BY Budget_Hdr_id Desc;
+ORDER BY Budget_Hdr_id DESC;
