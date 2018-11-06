@@ -46,7 +46,7 @@ co.legal_name AS legal_name--1
 
 FROM BUDG_HDR bh
 	INNER JOIN JWB_ALLOCATIONS ja ON ja.PROGRAM_ID = bh.Program_id AND ja.FY_ID = bh.FY_id
-	LEFT OUTER JOIN (SELECT jwb_allocations_id, MAX(id) id, MAX(date_executed) date_executed, MAX (crm_organization_id) crm_organization_id, (COUNT(date_executed)-1) amendments
+	LEFT OUTER JOIN (SELECT jwb_allocations_id, MAX(id) id, MIN(date_executed) date_executed, MAX (crm_organization_id) crm_organization_id, (COUNT(date_executed)-1) amendments
 		FROM crm_contract
 		GROUP BY jwb_allocations_id) cc ON cc.jwb_allocations_id = ja.ALLOC_ID
 	--LEFT OUTER JOIN crm_organization co ON cc.crm_organization_id=co.id
