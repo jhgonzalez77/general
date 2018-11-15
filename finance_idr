@@ -68,5 +68,5 @@ FROM BUDG_HDR bh
 		ORDER BY l.id DESC
 	) l
 
-WHERE bh.LAST_STATUS_ID = 2 AND amendments > 0
+WHERE bh.LAST_STATUS_ID = 2
 ORDER BY Budget_Hdr_id DESC;
