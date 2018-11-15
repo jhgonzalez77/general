@@ -17,9 +17,10 @@ co.legal_name AS legal_name--1
 ,(select TOP 1 per.first_name+' '+per.last_name from sam_program_trust_staff stf INNER JOIN tct_lookup tl ON tl.id = stf.role INNER JOIN person per ON per.id = stf.staff WHERE stf.sam_program_id = p.program_id AND tl.description = 'R&E Analyst' ORDER BY IsNull(end_date,'12/31/9999') DESC) AS research_analyst--14
 
 --,(SELECT pa2.allocationamount FROM ProgramAllocation pa2 WHERE pa2.AllocationTypeID IN (1,2) AND pa2.AllocationID = ja.ALLOC_ID ) AS original_contract_amount--16
-,(SELECT SUM(fyt2.JWBAllocation) + SUM(fyt2.TotalAmendments) FROM FiscalYearTotals fyt2 WHERE fyt2.BudgetHdrId=bh.budget_hdr_id) - (SELECT pa2.allocationamount FROM ProgramAllocation pa2 WHERE pa2.AllocationTypeID = 2 AND pa2.AllocationID = ja.ALLOC_ID) AS contract_amended_total_amt--21
+--,(SELECT SUM(fyt2.JWBAllocation) + SUM(fyt2.TotalAmendments) FROM FiscalYearTotals fyt2 WHERE fyt2.BudgetHdrId=bh.budget_hdr_id) - (SELECT pa2.allocationamount FROM ProgramAllocation pa2 WHERE pa2.AllocationTypeID = 2 AND pa2.AllocationID = ja.ALLOC_ID) AS contract_amended_total_amt--21
 ,(SELECT SUM(fyt2.JWBAllocation) + SUM(fyt2.TotalAmendments) FROM FiscalYearTotals fyt2 WHERE fyt2.BudgetHdrId=bh.budget_hdr_id) AS current_contract_amount--17
-,(SELECT pa2.allocationamount FROM ProgramAllocation pa2 WHERE pa2.AllocationTypeID IN (1,2) AND pa2.AllocationID = ja.ALLOC_ID ) AS original_contract_amount--16
+,(SELECT SUM(fyt2.JWBAllocation) FROM FiscalYearTotals fyt2 WHERE fyt2.BudgetHdrId=bh.budget_hdr_id) AS original_contract_amount--17
+--,(SELECT pa2.allocationamount FROM ProgramAllocation pa2 WHERE pa2.AllocationTypeID IN (1,2) AND pa2.AllocationID = ja.ALLOC_ID ) AS original_contract_amount--16
 ,(SELECT SUM(ja2.JWB_ALLOCATION) FROM JWB_ALLOCATIONS ja2 WHERE ja2.FY_ID=ja.FY_ID AND ja2.PROGRAM_ID=ja.PROGRAM_ID) AS max_award_amount--18
 ,cc.date_executed AS execution_date--19
 ,cc.amendments AS amendments
@@ -69,4 +70,4 @@ FROM BUDG_HDR bh
 	) l
 
 WHERE bh.LAST_STATUS_ID = 2
-ORDER BY Budget_Hdr_id DESC;
+ORDER BY Budget_Hdr_id;
